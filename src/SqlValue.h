@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <libpq-fe.h>
-
 #include <optional>
 #include <variant>
 #include <cstdint>
@@ -9,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <array>
+
+typedef struct pg_result PGresult;
 
 namespace AsyncPg {
 

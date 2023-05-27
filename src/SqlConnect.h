@@ -4,12 +4,12 @@
 #include "SqlResult.h"
 #include "SqlValue.h"
 
-#include "asio/io_service.hpp"
-#include "asio/local/stream_protocol.hpp"
-
-#include <libpq-fe.h>
-
 #include <queue>
+#include <functional>
+
+typedef struct pg_conn PGconn;
+
+namespace asio { class io_context; }
 
 namespace AsyncPg {
 
@@ -23,7 +23,7 @@ public:
     /// Конструктор класса
     /// @param connInfo Строка соединения с базой данных в URI формате
     /// @param service Сервис ввода-вывода
-    explicit SqlConnect(std::string_view connInfo, asio::io_service *service = nullptr);
+    explicit SqlConnect(std::string_view connInfo, asio::io_context *service = nullptr);
 
     /// Деструктор класса
     ~SqlConnect();
@@ -66,18 +66,14 @@ public:
     /// @return Результат выполнения запроса
     const SqlResult &result() const;
 
+    /// Возвращает сервис ввода-вывода
+    /// @return Сервис ввода-вывода
+    static asio::io_context *service();
+
 protected:
     /// Возвращает соединение PostgreSql
     /// @return Соединение PostgreSql
     PGconn *connect();
-
-    /// Возвращает сокет
-    /// @return Сокет
-    asio::local::stream_protocol::socket socket();
-
-    /// Возвращает сервис ввода-вывода
-    /// @return Сервис ввода-вывода
-    static asio::io_service *service();
 
     /// Производит соединение с PostgreSql
     void connecting();
@@ -97,7 +93,7 @@ protected:
     void pop();
 
 private:
-    asio::io_service     *_service = nullptr;
+    asio::io_context     *_service = nullptr;
     std::queue<Callback>  _callbackQueue;
     PGconn               *_connect = nullptr;
     std::string           _connInfo;

@@ -1,5 +1,7 @@
 ﻿#include "SqlValue.h"
 
+#include <libpq-fe.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -215,7 +217,7 @@ static std::string asDecimal(PGresult* pgresult, int row, int col)
     return (dscale < 0) ? str.substr(0, str.size() + dscale) : str;
 }
 
-SqlValue asSqlValue(PGresult* pgresult, int row, int col)
+SqlValue asSqlValue(PGresult *pgresult, int row, int col)
 {
     SqlValue result;
 

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <libpq-fe.h>
+typedef struct pg_result PGresult;
 
 namespace AsyncPg {
 
@@ -41,10 +41,6 @@ public:
     /// Возвращает результат PostgreSql
     /// @return Результат PostgreSql
     PGresult *pgresult() const;
-
-    /// Возвращает PostgreSql статус Sql запроса
-    /// @return PostgreSql статус Sql запроса
-    ExecStatusType status() const;
 
     /// Возвращает флаг наличия результата Sql запроса
     /// @return Флаг наличия результата Sql запроса

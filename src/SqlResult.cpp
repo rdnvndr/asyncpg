@@ -53,20 +53,15 @@ int SqlResult::columns() const
     return _columns;
 }
 
-PGresult *SqlResult::pgresult() const
+pg_result *SqlResult::pgresult() const
 {
     return _result;
-}
-
-ExecStatusType SqlResult::status() const
-{
-    return PQresultStatus(_result);
 }
 
 bool SqlResult::operator!() const
 {
     if (_result) {
-        switch(status()) {
+        switch(PQresultStatus(_result)) {
         case PGRES_EMPTY_QUERY:     /* empty query string was executed */
         case PGRES_COMMAND_OK:      /* a query command that doesn't return
                                             * anything was executed properly by the

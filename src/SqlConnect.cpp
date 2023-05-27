@@ -1,13 +1,23 @@
 ﻿#include "SqlConnect.h"
 #include "SqlValue.h"
 
+#include "asio/io_service.hpp"
+#include "asio/local/stream_protocol.hpp"
+
 #include <iostream>
 #include <libpq-fe.h>
 #include <thread>
 
 namespace AsyncPg {
 
-SqlConnect::SqlConnect(std::string_view connInfo, asio::io_service *service)
+static asio::local::stream_protocol::socket socket(asio::io_context *service, PGconn *connect)
+{
+    asio::local::stream_protocol stream_protocol;
+    auto *serv = service ? service : SqlConnect::service();
+    return asio::local::stream_protocol::socket(*serv, stream_protocol, dup(PQsocket(connect)));
+}
+
+SqlConnect::SqlConnect(std::string_view connInfo, asio::io_context *service)
 {
     _service = service;
     _connInfo = connInfo;
@@ -161,13 +171,13 @@ SqlConnect SqlConnect::clone()
     return SqlConnect(_connInfo, _service);
 }
 
-asio::io_service *SqlConnect::service()
+asio::io_context *SqlConnect::service()
 {
     static bool started = false;
-    static asio::io_service service{static_cast<int>(std::thread::hardware_concurrency())};
+    static asio::io_context service{static_cast<int>(std::thread::hardware_concurrency())};
     if (!started) {
         std::thread thread([](){
-            asio::io_service::work work(*SqlConnect::service());
+            ::asio::io_context::work work(*SqlConnect::service());
             SqlConnect::service()->run();
         });
         thread.detach();
@@ -177,29 +187,21 @@ asio::io_service *SqlConnect::service()
     return &service;
 }
 
-asio::local::stream_protocol::socket SqlConnect::socket()
-{
-    asio::local::stream_protocol stream_protocol;
-    return asio::local::stream_protocol::socket(
-        _service ? *_service : *SqlConnect::service(), stream_protocol, dup(PQsocket(_connect)));
-}
-
 void SqlConnect::connecting()
 {
-    auto socket = this->socket();
     auto ret = PQconnectPoll(_connect);
     switch (ret) {
     case PGRES_POLLING_READING:
-        socket.async_read_some(
-            asio::null_buffers(),
+        socket(_service, _connect).async_read_some(
+            ::asio::null_buffers(),
             [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
                 connecting();
             });
         break;
 
     case PGRES_POLLING_WRITING:
-        socket.async_write_some(
-            asio::null_buffers(),
+        socket(_service, _connect).async_write_some(
+            ::asio::null_buffers(),
             [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
                 connecting();
             });
@@ -220,8 +222,8 @@ void SqlConnect::connecting()
 
 void SqlConnect::preparing()
 {
-    socket().async_read_some(
-        asio::null_buffers(),
+    socket(_service, _connect).async_read_some(
+        ::asio::null_buffers(),
         [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
             auto pgconn = connect();
             if (PQconsumeInput(pgconn) != 1) {
@@ -249,8 +251,8 @@ void SqlConnect::preparing()
 
 void SqlConnect::executing()
 {
-    socket().async_read_some(
-        asio::null_buffers(),
+    socket(_service, _connect).async_read_some(
+        ::asio::null_buffers(),
         [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
             auto pgconn = connect();
             if (PQconsumeInput(pgconn) != 1) {
@@ -314,7 +316,7 @@ bool SqlConnect::push(const SqlConnect::Callback &callback)
     return isCall;
 }
 
-PGconn *SqlConnect::connect()
+struct pg_conn *SqlConnect::connect()
 {
     return _connect;
 }
