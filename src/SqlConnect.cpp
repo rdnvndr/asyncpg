@@ -47,7 +47,11 @@ void SqlConnect::execute(std::string_view sql)
             return;
         }
         self->_error.clear();
-        self->executing();
+        socket(self->_service, self->_connect).async_read_some(
+            asio::null_buffers(),
+            [self]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
+                self->executing();
+            });
     };
     push(callback);
 }
@@ -81,7 +85,11 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
             return;
         }
         self->_error.clear();
-        self->executing();
+        socket(self->_service, self->_connect).async_read_some(
+            asio::null_buffers(),
+            [self]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
+                self->executing();
+            });
     };
     push(callback);
 }
@@ -104,7 +112,11 @@ void SqlConnect::prepare(std::string_view sql, std::vector<SqlType> sqlTypes)
             return;
         }
         self->_error.clear();
-        self->preparing();
+        socket(self->_service, self->_connect).async_read_some(
+            asio::null_buffers(),
+            [self]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
+                self->preparing();
+            });
     };
     push(callback);
 }
@@ -136,7 +148,11 @@ void SqlConnect::execute(std::vector<SqlValue> params)
             return;
         }
         self->_error.clear();
-        self->executing();
+        socket(self->_service, self->_connect).async_read_some(
+            asio::null_buffers(),
+            [self]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
+                self->executing();
+            });
     };
     push(callback);
 }
@@ -177,7 +193,7 @@ asio::io_context *SqlConnect::service()
     static asio::io_context service{static_cast<int>(std::thread::hardware_concurrency())};
     if (!started) {
         std::thread thread([](){
-            ::asio::io_context::work work(*SqlConnect::service());
+            asio::io_context::work work(*SqlConnect::service());
             SqlConnect::service()->run();
         });
         thread.detach();
@@ -193,7 +209,7 @@ void SqlConnect::connecting()
     switch (ret) {
     case PGRES_POLLING_READING:
         socket(_service, _connect).async_read_some(
-            ::asio::null_buffers(),
+            asio::null_buffers(),
             [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
                 connecting();
             });
@@ -201,7 +217,7 @@ void SqlConnect::connecting()
 
     case PGRES_POLLING_WRITING:
         socket(_service, _connect).async_write_some(
-            ::asio::null_buffers(),
+            asio::null_buffers(),
             [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
                 connecting();
             });
@@ -222,63 +238,63 @@ void SqlConnect::connecting()
 
 void SqlConnect::preparing()
 {
-    socket(_service, _connect).async_read_some(
-        ::asio::null_buffers(),
-        [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
-            auto pgconn = connect();
-            if (PQconsumeInput(pgconn) != 1) {
-                _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
-                pop();
-                return;
-            }
+    auto pgconn = connect();
+    if (PQconsumeInput(pgconn) != 1) {
+        _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
+        pop();
+        return;
+    }
 
-            if (PQisBusy(pgconn) != 1) {
-                executing();
-                return;
-            }
+    if (PQisBusy(pgconn) == 1) {
+        socket(_service, _connect).async_read_some(
+                asio::null_buffers(),
+                [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
+                    preparing();
+                });
+        return;
+    }
 
-            if (auto pgResult = PQgetResult(pgconn)) {
-                if (PQresultStatus(pgResult) != PGRES_COMMAND_OK)
-                    _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
-                PQclear(pgResult);
-            }
+    if (auto pgResult = PQgetResult(pgconn)) {
+        if (PQresultStatus(pgResult) != PGRES_COMMAND_OK)
+            _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
+        PQclear(pgResult);
+    }
 
-            while (auto pgResult = PQgetResult(pgconn))
-                PQclear(pgResult);
-            pop();
-        });
+    while (auto pgResult = PQgetResult(pgconn))
+        PQclear(pgResult);
+    pop();
 }
 
 void SqlConnect::executing()
 {
-    socket(_service, _connect).async_read_some(
-        ::asio::null_buffers(),
-        [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
-            auto pgconn = connect();
-            if (PQconsumeInput(pgconn) != 1) {
-                _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
-                pop();
-                return;
-            }
+    auto pgconn = connect();
+    if (PQconsumeInput(pgconn) != 1) {
+        _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
+        pop();
+        return;
+    }
 
-            if (PQisBusy(pgconn) != 1) {
+    if (PQisBusy(pgconn) == 1) {
+        socket(_service, _connect).async_read_some(
+            asio::null_buffers(),
+            [this]([[maybe_unused]] std::error_code code, [[maybe_unused]] std::size_t size) {
                 executing();
-                return;
-            }
+            });
+        return;
+    }
 
-            if (auto pgResult = PQgetResult(pgconn)) {
-                if (PQresultStatus(pgResult) == PGRES_TUPLES_OK) {
-                    _result = SqlResult(pgResult);
-                } else {
-                    _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
-                    PQclear(pgResult);
-                }
-            }
+    if (auto pgResult = PQgetResult(pgconn)) {
+        if (PQresultStatus(pgResult) == PGRES_TUPLES_OK) {
+            _result = SqlResult(pgResult);
+        } else {
+            _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
+            PQclear(pgResult);
+        }
+    }
 
-            while (auto pgResult = PQgetResult(pgconn))
-                PQclear(pgResult);
-            pop();
-        });
+    while (auto pgResult = PQgetResult(pgconn))
+        PQclear(pgResult);
+    pop();
 }
 
 void SqlConnect::pop()
