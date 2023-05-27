@@ -1,4 +1,4 @@
-include("${CMAKE_SOURCE_DIR}/cmake/main.cmake")
+﻿include("${CMAKE_SOURCE_DIR}/cmake/main.cmake")
 
 # Места нахождения бинарных файлов
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BINARY_DIR}/${TESTPATH}")

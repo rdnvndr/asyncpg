@@ -1,6 +1,8 @@
-# Файлы для сборки
+﻿# Файлы для сборки
 file(GLOB HEADERS   "*.h")
 file(GLOB SOURCES   "*.cpp")
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
 # Пути к бинарным файлам
 set(BINARY_DIR "${CMAKE_BINARY_DIR}")

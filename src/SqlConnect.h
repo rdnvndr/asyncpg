@@ -8,8 +8,7 @@
 #include <functional>
 
 typedef struct pg_conn PGconn;
-
-namespace asio { class io_context; }
+struct event_base;
 
 namespace AsyncPg {
 
@@ -23,7 +22,7 @@ public:
     /// Конструктор класса
     /// @param connInfo Строка соединения с базой данных в URI формате
     /// @param service Сервис ввода-вывода
-    explicit SqlConnect(std::string_view connInfo, asio::io_context *service = nullptr);
+    explicit SqlConnect(std::string_view connInfo, struct event_base *evbase = nullptr);
 
     /// Деструктор класса
     ~SqlConnect();
@@ -66,15 +65,6 @@ public:
     /// @return Результат выполнения запроса
     const SqlResult &result() const;
 
-    /// Возвращает сервис ввода-вывода
-    /// @return Сервис ввода-вывода
-    static asio::io_context *service();
-
-protected:
-    /// Возвращает соединение PostgreSql
-    /// @return Соединение PostgreSql
-    PGconn *connect();
-
     /// Производит соединение с PostgreSql
     void connecting();
 
@@ -83,6 +73,11 @@ protected:
 
     /// Производит запуск SQL запроса
     void executing();
+
+protected:
+    /// Возвращает соединение PostgreSql
+    /// @return Соединение PostgreSql
+    PGconn *connect();
 
     /// Добавляет обработчик результата SQL запроса в очередь
     /// @param callback Функция обратного вызова
@@ -93,13 +88,14 @@ protected:
     void pop();
 
 private:
-    asio::io_context     *_service = nullptr;
+    struct event_base    *_evbase = nullptr;
     std::queue<Callback>  _callbackQueue;
     PGconn               *_connect = nullptr;
     std::string           _connInfo;
     SqlError              _error;
     SqlResult             _result;
     bool                  _isExec = true;
+    int                   _socket = -1;
 };
 
 }
