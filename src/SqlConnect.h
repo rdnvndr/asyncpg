@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "global.h"
+
 #include "SqlError.h"
 #include "SqlResult.h"
 #include "SqlValue.h"
@@ -13,7 +15,7 @@ struct event_base;
 namespace AsyncPg {
 
 /// Соединение с базой данных
-class SqlConnect
+class ASYNCPGLIB SqlConnect
 {
 public:
     /// Функция обратного вызова

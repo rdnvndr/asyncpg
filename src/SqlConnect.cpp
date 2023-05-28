@@ -7,7 +7,12 @@
 
 #include <iostream>
 #include <thread>
+
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 namespace AsyncPg {
 
@@ -38,8 +43,11 @@ SqlConnect::SqlConnect(std::string_view connInfo, event_base *evbase)
         _error = SqlError("Connection to database failed.", PQerrorMessage(_connect));
         return;
     }
-
+#ifdef _WIN32
+    _socket = _dup(PQsocket(_connect));
+#else
     _socket = dup(PQsocket(_connect));
+#endif
     connecting();
 }
 
@@ -71,10 +79,10 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
 {
     auto callback = [sql, params = std::move(params)](SqlConnect *self) {
         const auto nParams = params.size();
-        unsigned int types[nParams];
-        char *values[nParams];
-        int lengths[nParams];
-        int formats[nParams];
+        unsigned int *types = new unsigned int[nParams];
+        char **values = new char* [nParams];
+        int *lengths = new int[nParams];
+        int *formats = new int[nParams];
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i) {
             const auto &[oid, length, value] = asPgValue(params[i]);
@@ -89,6 +97,11 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i)
             delete[] values[i];
+
+        delete[] types;
+        delete[] values;
+        delete[] lengths;
+        delete[] formats;
 
         if (result != 1) {
             self->_error = SqlError("Execution sql query failed.", PQerrorMessage(self->connect()));
@@ -107,13 +120,15 @@ void SqlConnect::prepare(std::string_view sql, std::vector<SqlType> sqlTypes)
 {
     auto callback = [sql, sqlTypes = std::move(sqlTypes)](SqlConnect *self) {
         const auto nTypes = sqlTypes.size();
-        unsigned int types[nTypes];
+        unsigned int *types = new unsigned int[nTypes];
         for (std::size_t i = 0, e = nTypes; i < e; ++i) {
             types[i] = toPgType(sqlTypes[i]);
         }
 
         auto result = PQsendPrepare(
             self->connect(), "", sql.data(), nTypes, types);
+
+        delete[] types;
 
         if (result != 1) {
             self->_error = SqlError("Preparation sql query failed.", PQerrorMessage(self->connect()));
@@ -132,9 +147,9 @@ void SqlConnect::execute(std::vector<SqlValue> params)
 {
     auto callback = [params = std::move(params)](SqlConnect *self) {
         const auto nParams = params.size();
-        char *values[nParams];
-        int lengths[nParams];
-        int formats[nParams];
+        char **values = new char* [nParams];
+        int *lengths = new int[nParams];
+        int *formats = new int[nParams];
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i) {
             const auto &[oid, length, value] = asPgValue(params[i]);
@@ -148,6 +163,10 @@ void SqlConnect::execute(std::vector<SqlValue> params)
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i)
             delete[] values[i];
+
+        delete[] values;
+        delete[] lengths;
+        delete[] formats;
 
         if (result != 1) {
             self->_error = SqlError("Execution sql query failed.", PQerrorMessage(self->connect()));

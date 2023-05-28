@@ -4,5 +4,6 @@ project(tst_main_mnl VERSION 1.0.0)
 set(LIBRARIES asyncpg)
 include(../manual.cmake)
 
-find_package(LibEvent)
-target_link_libraries(${PROJECT_NAME} ${LibEvent_LIBRARIES})
+include("${CMAKE_SOURCE_DIR}/cmake/libevent.cmake")
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBEVENT_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${LIBEVENT_LIBRARIES})

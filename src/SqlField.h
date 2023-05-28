@@ -1,12 +1,14 @@
 ﻿#pragma once
 
+#include "global.h"
+
 #include "SqlRecord.h"
 #include "SqlValue.h"
 
 namespace AsyncPg {
 
 /// Поле строки результата Sql запроса
-class SqlField
+class ASYNCPGLIB SqlField
 {
 public:
     /// Конструктор класса

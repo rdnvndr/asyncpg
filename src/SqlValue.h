@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "global.h"
+
 #include <optional>
 #include <variant>
 #include <cstdint>
@@ -53,7 +55,7 @@ enum SqlType : size_t {
 /// @param row Номер строки
 /// @param col Номер колонки
 /// @return Значение поля строки результата Sql запроса
-SqlValue asSqlValue(PGresult* pgresult, int row, int col);
+ASYNCPGLIB SqlValue asSqlValue(PGresult* pgresult, int row, int col);
 
 /// Создаёт значение поля строки результата Sql запроса
 /// @param I Тип поля строки результата Sql запроса
@@ -68,12 +70,12 @@ SqlValue makeSqlValue(Args&&... args) {
 /// Конвертирует значение поля строки результата Sql запроса в значение PostgreSql
 /// @param value Значение поля строки результата Sql запроса
 /// @return Значение PostgreSql
-std::tuple<unsigned int, std::size_t, char *> asPgValue(const SqlValue &value);
+ASYNCPGLIB std::tuple<unsigned int, std::size_t, char *> asPgValue(const SqlValue &value);
 
 
 /// Конвертирует тип поля строки результата Sql запроса в тип PostgreSql
 /// @param type Тип поля строки результата Sql запроса
 /// @return Тип PostgreSql
-unsigned int toPgType(SqlType type);
+ASYNCPGLIB unsigned int toPgType(SqlType type);
 
 }

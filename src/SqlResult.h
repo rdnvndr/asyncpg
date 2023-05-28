@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "global.h"
+
 typedef struct pg_result PGresult;
 
 namespace AsyncPg {
@@ -7,7 +9,7 @@ namespace AsyncPg {
 class SqlRecord;
 
 /// Результат Sql запроса
-class SqlResult
+class ASYNCPGLIB SqlResult
 {
 public:
     /// Конструктор класса

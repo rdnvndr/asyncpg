@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "global.h"
+
 #include <exception>
 #include <string_view>
 #include <string>
@@ -7,7 +9,7 @@
 namespace AsyncPg {
 
 /// Ошибка Sql запроса
-class SqlError : std::exception
+class ASYNCPGLIB SqlError : std::exception
 {
 public:
     /// Конструктор класса по умолчанию
@@ -23,7 +25,7 @@ public:
 
     /// Возвращает сообщение об ошибке
     /// @return Сообщение об ошибке
-    const char* what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW override;
+    const char* what() const noexcept override;
 
     /// Возвращает сообщение об ошибке
     /// @return Сообщение об ошибке
