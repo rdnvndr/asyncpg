@@ -1,7 +1,62 @@
-﻿include(FetchContent)
-FetchContent_Declare(Libevent
-    GIT_REPOSITORY https://github.com/libevent/libevent.git
-    GIT_TAG release-2.1.12-stable
-    FIND_PACKAGE_ARGS NAMES Libevent
-)
-FetchContent_MakeAvailable(Libevent)
+find_package(Libevent QUIET)
+if(NOT Libevent_FOUND)
+
+
+include(ExternalProject)
+if (WIN32)
+    ExternalProject_Add(Libevent
+        GIT_REPOSITORY https://github.com/libevent/libevent.git
+        GIT_TAG release-2.1.12-stable
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${BINARY_DIR}
+            -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY} 
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY} 
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+            -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE=${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE} 
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE=${CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE} 
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}
+            -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG=${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG} 
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG=${CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG} 
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}
+            -DEVENT__DISABLE_TESTS=ON
+            -DEVENT__DISABLE_SAMPLES=ON
+            -DEVENT__DISABLE_REGRESS=ON
+            -DEVENT__DISABLE_BENCHMARK=ON
+        INSTALL_COMMAND ""
+    )
+else()
+    ExternalProject_Add(Libevent
+        GIT_REPOSITORY https://github.com/libevent/libevent.git
+        GIT_TAG release-2.1.12-stable
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${BINARY_DIR}
+            -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY} 
+            -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY} 
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+            -DEVENT__DISABLE_TESTS=ON
+            -DEVENT__DISABLE_SAMPLES=ON
+            -DEVENT__DISABLE_REGRESS=ON
+            -DEVENT__DISABLE_BENCHMARK=ON
+        INSTALL_COMMAND ""
+    )
+endif()
+add_dependencies(${PROJECT_NAME} Libevent)
+
+ExternalProject_Get_property(Libevent SOURCE_DIR)
+ExternalProject_Get_property(Libevent BINARY_DIR)
+set(LIBEVENT_INCLUDE_DIRS "${SOURCE_DIR}/include;${BINARY_DIR}/include)")
+
+if (WIN32)
+    set(LIBEVENT_LIBRARIES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/event.lib")
+else()
+    set(LIBEVENT_LIBRARIES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libevent.so")
+endif()
+
+
+
+# Установка проекта
+install(IMPORTED_RUNTIME_ARTIFACTS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
+install (DIRECTORY  ${SOURCE_DIR}/include/ ${BINARY_DIR}/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+
+endif()
