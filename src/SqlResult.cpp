@@ -53,6 +53,16 @@ int SqlResult::columns() const
     return _columns;
 }
 
+std::string SqlResult::fieldName(int column) const
+{
+    return std::string(PQfname(_result, column));
+}
+
+int SqlResult::column(std::string_view fieldName) const
+{
+    return PQfnumber(_result, fieldName.data());
+}
+
 pg_result *SqlResult::pgresult() const
 {
     return _result;
@@ -83,6 +93,11 @@ bool SqlResult::operator!() const
         }
     }
     return true;
+}
+
+SqlRecord SqlResult::at(int row) const
+{
+    return SqlRecord(*this, row);
 }
 
 SqlRecord SqlResult::begin() const

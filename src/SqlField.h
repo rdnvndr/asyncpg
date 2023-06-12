@@ -62,6 +62,10 @@ public:
     /// @return Номер колонки в строке результата Sql запроса
     int column() const;
 
+    /// Возвращает наименование колонки
+    /// @return Наименование колонки
+    std::string fieldName() const;
+
     /// Возвращает строку результата Sql запроса
     /// @return Строка результата Sql запроса
     const SqlRecord &record() const;

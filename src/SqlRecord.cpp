@@ -46,6 +46,16 @@ const SqlResult &SqlRecord::result() const
     return _result;
 }
 
+SqlField SqlRecord::at(int column) const
+{
+    return SqlField(*this, column);
+}
+
+SqlField SqlRecord::at(std::string_view fieldName) const
+{
+    return SqlField(*this, _result.column(fieldName));
+}
+
 SqlField SqlRecord::begin() const
 {
     return SqlField(*this, 0);

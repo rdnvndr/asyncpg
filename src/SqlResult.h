@@ -2,6 +2,8 @@
 
 #include "global.h"
 
+#include <string>
+
 typedef struct pg_result PGresult;
 
 namespace AsyncPg {
@@ -40,6 +42,16 @@ public:
     /// @return Количество колонок в строке результат Sql запроса
     int columns() const;
 
+    /// Возвращает наименование колонки по номеру колонки
+    /// @param column Номер колонки
+    /// @return Наименование колонки
+    std::string fieldName(int column) const;
+
+    /// Возвращает номер колонки по наименованию поля
+    /// @param fieldName Наименование колонки
+    /// @return Номер колонки
+    int column(std::string_view fieldName) const;
+
     /// Возвращает результат PostgreSql
     /// @return Результат PostgreSql
     PGresult *pgresult() const;
@@ -47,6 +59,11 @@ public:
     /// Возвращает флаг наличия результата Sql запроса
     /// @return Флаг наличия результата Sql запроса
     bool operator!() const;
+
+    /// Возвращает указанную строку Sql запроса
+    /// @param row Номер строки
+    /// @return Строка Sql запроса
+    SqlRecord at(int row) const;
 
     /// Возвращает первую строку Sql запроса
     /// @return Первая строка Sql запроса

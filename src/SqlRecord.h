@@ -46,6 +46,16 @@ public:
     /// @return Результата Sql запроса
     const SqlResult &result() const;
 
+    /// Возвращает указанное поле строки результата Sql запроса
+    /// @param column Номер колонки
+    /// @return Поле строки результата Sql запроса
+    SqlField at(int column) const;
+
+    /// Возвращает указанное поле строки результата Sql запроса
+    /// @param column Наименование поля
+    /// @return Поле строки результата Sql запроса
+    SqlField at(std::string_view fieldName) const;
+
     /// Возвращает первое поле строки результата Sql запроса
     /// @return Первое поле строки результата Sql запроса
     SqlField begin() const;

@@ -46,6 +46,11 @@ int SqlField::column() const
     return _col;
 }
 
+std::string SqlField::fieldName() const
+{
+    return _record.result().fieldName(_col);
+}
+
 int SqlField::row() const
 {
     return _record.row();
