@@ -7,6 +7,7 @@
 #include <event.h>
 
 #include <cstdint>
+#include <event2/event.h>
 #include <memory>
 #include <string>
 #include <iostream>
@@ -57,5 +58,6 @@ int main(int argc, char* argv[])
     });
 
     event_base_dispatch(evBase);
+    //event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY);
     event_base_free(evBase);
 }
