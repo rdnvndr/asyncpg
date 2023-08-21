@@ -1,4 +1,5 @@
 ﻿#include "SqlConnect.h"
+#include "SqlError.h"
 #include "SqlValue.h"
 
 #include <event.h>
@@ -40,7 +41,7 @@ SqlConnect::SqlConnect(std::string_view connInfo, event_base *evbase)
     _connInfo = connInfo;
     _connect = PQconnectStart(connInfo.data());
     if (PQstatus(_connect) == CONNECTION_BAD) {
-        _error = SqlError("Connection to database failed.", PQerrorMessage(_connect));
+        _error = SqlError(ErrorCode::ConnectionFailed, PQerrorMessage(_connect));
         return;
     }
 #ifdef _WIN32
@@ -63,7 +64,7 @@ void SqlConnect::execute(std::string_view sql)
         auto result =
             PQsendQueryParams(self->connect(), sql.data(), 0, nullptr, nullptr, nullptr, nullptr, 1);
         if (result != 1) {
-            self->_error = SqlError("Execution sql query failed.", PQerrorMessage(self->connect()));
+            self->_error = SqlError(ErrorCode::ExecutionFailed, PQerrorMessage(self->connect()));
             self->pop();
             return;
         }
@@ -104,7 +105,7 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
         delete[] formats;
 
         if (result != 1) {
-            self->_error = SqlError("Execution sql query failed.", PQerrorMessage(self->connect()));
+            self->_error = SqlError(ErrorCode::ExecutionFailed, PQerrorMessage(self->connect()));
             self->pop();
             return;
         }
@@ -131,7 +132,7 @@ void SqlConnect::prepare(std::string_view sql, std::vector<SqlType> sqlTypes)
         delete[] types;
 
         if (result != 1) {
-            self->_error = SqlError("Preparation sql query failed.", PQerrorMessage(self->connect()));
+            self->_error = SqlError(ErrorCode::PreparationFailed, PQerrorMessage(self->connect()));
             self->pop();
             return;
         }
@@ -169,7 +170,7 @@ void SqlConnect::execute(std::vector<SqlValue> params)
         delete[] formats;
 
         if (result != 1) {
-            self->_error = SqlError("Execution sql query failed.", PQerrorMessage(self->connect()));
+            self->_error = SqlError(ErrorCode::ExecutionFailed, PQerrorMessage(self->connect()));
             self->pop();
             return;
         }
@@ -191,7 +192,7 @@ bool SqlConnect::cancel()
     bool canceled = (PQcancel(cancelObject, errorBuffer, sizeof(errorBuffer)) != 0);
 
     if (!canceled)
-        _error = SqlError("Can't stop current query.", PQerrorMessage(_connect));
+        _error = SqlError(ErrorCode::CancelFailed, PQerrorMessage(_connect));
     PQfreeCancel(cancelObject);
 
     return canceled;
@@ -227,7 +228,7 @@ void SqlConnect::connecting()
         pop();
         break;
     case PGRES_POLLING_FAILED:
-        _error = SqlError("Connection to database failed.", PQerrorMessage(_connect));
+        _error = SqlError(ErrorCode::ConnectionFailed, PQerrorMessage(_connect));
         break;
     default:
         break;
@@ -238,7 +239,7 @@ void SqlConnect::preparing()
 {
     auto pgconn = connect();
     if (PQconsumeInput(pgconn) != 1) {
-        _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
+        _error = SqlError(ErrorCode::PreparationFailed, PQerrorMessage(pgconn));
         pop();
         return;
     }
@@ -251,7 +252,7 @@ void SqlConnect::preparing()
 
     if (auto pgResult = PQgetResult(pgconn)) {
         if (PQresultStatus(pgResult) != PGRES_COMMAND_OK)
-            _error = SqlError("Preparation sql query failed.", PQerrorMessage(pgconn));
+            _error = SqlError(ErrorCode::PreparationFailed, PQerrorMessage(pgconn));
         PQclear(pgResult);
     }
 
@@ -264,7 +265,7 @@ void SqlConnect::executing()
 {
     auto pgconn = connect();
     if (PQconsumeInput(pgconn) != 1) {
-        _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
+        _error = SqlError(ErrorCode::ExecutionFailed, PQerrorMessage(pgconn));
         pop();
         return;
     }
@@ -279,7 +280,7 @@ void SqlConnect::executing()
         if (PQresultStatus(pgResult) == PGRES_TUPLES_OK) {
             _result = SqlResult(pgResult);
         } else {
-            _error = SqlError("Execution sql query failed.", PQerrorMessage(pgconn));
+            _error = SqlError(ErrorCode::ExecutionFailed, PQerrorMessage(pgconn));
             PQclear(pgResult);
         }
     }

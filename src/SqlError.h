@@ -1,50 +1,34 @@
 ﻿#pragma once
 
 #include "global.h"
+#include "SqlErrorCategory.h"
 
-#include <exception>
 #include <string_view>
 #include <string>
+#include <system_error>
 
 namespace AsyncPg {
 
 /// Ошибка Sql запроса
-class ASYNCPGLIB SqlError : std::exception
+class ASYNCPGLIB SqlError : public std::error_code
 {
 public:
     /// Конструктор класса по умолчанию
     SqlError() = default;
 
-    /// Конструктор копирования
-    SqlError(const SqlError& other);
-
     /// Конструктор класса
-    /// @param errorMessage Сообщение об ошибке
+    /// @param code Код ошибки
     /// @param driverError Сообщение об ошибке PostgreSql
-    explicit SqlError(std::string_view errorMessage, std::string_view driverError = "");
-
-    /// Возвращает сообщение об ошибке
-    /// @return Сообщение об ошибке
-    const char* what() const noexcept override;
-
-    /// Возвращает сообщение об ошибке
-    /// @return Сообщение об ошибке
-    const std::string& errorMessage() const;
+    explicit SqlError(ErrorCode code, std::string_view driverError = "");
 
     /// Возвращает сообщение об ошибке PostgreSql
     /// @return Сообщение об ошибке PostgreSql
     const std::string& driverMessage() const;
 
-    /// Возвращает true при наличии ошибки, иначе false
-    /// @return true при наличии ошибки, иначе false
-    operator bool() const;
-
     /// Очищает ошибку
     void clear();
 
 private:
-    bool        _isError = false;
-    std::string _errorMessage;
     std::string _driverMessage;
 };
 
