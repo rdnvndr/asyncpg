@@ -229,6 +229,7 @@ void SqlConnect::connecting()
         break;
     case PGRES_POLLING_FAILED:
         _error = SqlError(ErrorCode::ConnectionFailed, PQerrorMessage(_connect));
+        pop();
         break;
     default:
         break;
