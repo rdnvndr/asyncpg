@@ -78,4 +78,14 @@ ASYNCPGLIB std::tuple<unsigned int, std::size_t, char *> asPgValue(const SqlValu
 /// @return Тип PostgreSql
 ASYNCPGLIB unsigned int toPgType(SqlType type);
 
+/// Конвертирует строку в глобальный идентификатор
+/// @param str Строка
+/// @return Глобальный идентификатор
+ASYNCPGLIB std::array<char, 16> toByteUuid(std::string_view str);
+
+/// Конвертирует глобальный идентификатор в строку
+/// @param uuid Глобальный идентификатор
+/// @return Строка
+ASYNCPGLIB std::string fromByteUuid(const std::array<char, 16> &uuid);
+
 }
