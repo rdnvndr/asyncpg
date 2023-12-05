@@ -7,7 +7,6 @@
 #include <libpq-fe.h>
 
 #include <iostream>
-#include <thread>
 
 #ifdef _WIN32
 #include <io.h>
@@ -17,19 +16,19 @@
 
 namespace AsyncPg {
 
-static void ev_connecting(evutil_socket_t fd, short what, void *arg)
+static void ev_connecting(evutil_socket_t /*fd*/, short /*what*/, void *arg)
 {
     auto *sqlConnect = reinterpret_cast<SqlConnect *>(arg);
     sqlConnect->connecting();
 }
 
-static void ev_preparing(evutil_socket_t fd, short what, void *arg)
+static void ev_preparing(evutil_socket_t /*fd*/, short /*what*/, void *arg)
 {
     auto *sqlConnect = reinterpret_cast<SqlConnect *>(arg);
     sqlConnect->preparing();
 }
 
-static void ev_executing(evutil_socket_t fd, short what, void *arg)
+static void ev_executing(evutil_socket_t /*fd*/, short /*what*/, void *arg)
 {
     auto *sqlConnect = reinterpret_cast<SqlConnect *>(arg);
     sqlConnect->executing();
@@ -80,7 +79,7 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
 {
     auto callback = [sql, params = std::move(params)](SqlConnect *self) {
         const auto nParams = params.size();
-        unsigned int *types = new unsigned int[nParams];
+        auto *types = new unsigned int[nParams];
         char **values = new char* [nParams];
         int *lengths = new int[nParams];
         int *formats = new int[nParams];
@@ -89,12 +88,13 @@ void SqlConnect::execute(std::string_view sql, std::vector<SqlValue> params)
             const auto &[oid, length, value] = asPgValue(params[i]);
             types[i] = oid;
             values[i] = value;
-            lengths[i] = length;
+            lengths[i] = static_cast<int>(length);
             formats[i] = 1;
         }
 
         auto result = PQsendQueryParams(
-            self->connect(), sql.data(), nParams, types, values, lengths, formats, 1);
+            self->connect(), sql.data(), static_cast<int>(nParams),
+            types, values, lengths, formats, 1);
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i)
             delete[] values[i];
@@ -121,13 +121,13 @@ void SqlConnect::prepare(std::string_view sql, std::vector<SqlType> sqlTypes)
 {
     auto callback = [sql, sqlTypes = std::move(sqlTypes)](SqlConnect *self) {
         const auto nTypes = sqlTypes.size();
-        unsigned int *types = new unsigned int[nTypes];
+        auto *types = new unsigned int[nTypes];
         for (std::size_t i = 0, e = nTypes; i < e; ++i) {
             types[i] = toPgType(sqlTypes[i]);
         }
 
         auto result = PQsendPrepare(
-            self->connect(), "", sql.data(), nTypes, types);
+            self->connect(), "", sql.data(), static_cast<int>(nTypes), types);
 
         delete[] types;
 
@@ -155,12 +155,12 @@ void SqlConnect::execute(std::vector<SqlValue> params)
         for (std::size_t i = 0, e = params.size(); i < e; ++i) {
             const auto &[oid, length, value] = asPgValue(params[i]);
             values[i] = value;
-            lengths[i] = length;
+            lengths[i] = static_cast<int>(length);
             formats[i] = 1;
         }
 
         auto result = PQsendQueryPrepared(
-            self->connect(), "", nParams, values, lengths, formats, 1);
+            self->connect(), "", static_cast<int>(nParams), values, lengths, formats, 1);
 
         for (std::size_t i = 0, e = params.size(); i < e; ++i)
             delete[] values[i];

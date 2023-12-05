@@ -9,7 +9,7 @@
 #include <queue>
 #include <functional>
 
-typedef struct pg_conn PGconn;
+using PGconn = struct pg_conn;
 struct event_base;
 
 namespace AsyncPg {

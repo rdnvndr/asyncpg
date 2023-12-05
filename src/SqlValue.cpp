@@ -452,7 +452,7 @@ static std::tuple<unsigned int, std::size_t, char *> fromDecimal(
 
     if (existIntPart) {
         int beg = (sign != 0) ? 1 : 0;
-        int end = (pos == std::string::npos ? value->length() : pos) - 1;
+        int end = static_cast<int>(pos == std::string::npos ? value->length() : pos) - 1;
 
         std::size_t count   = 0;
         std::size_t notZeroPos = end;
@@ -462,7 +462,8 @@ static std::tuple<unsigned int, std::size_t, char *> fromDecimal(
 
             if (++count == 4 || i == beg) {
                 auto zeroCount = notZeroPos - i;
-                int16_t digit = std::stoi(value->substr(i + zeroCount, count - zeroCount));
+                int16_t digit = static_cast<int16_t>(
+                    std::stoi(value->substr(i + zeroCount, count - zeroCount)));
                 count = 0;
                 ++width;
 
@@ -481,8 +482,8 @@ static std::tuple<unsigned int, std::size_t, char *> fromDecimal(
                 std::string sdigit = value->substr(i - count + 1, count);
                 if (count < 4)
                     sdigit += std::string(4 - count, '0');
-                int16_t digit = std::stoi(sdigit);
-                dscale += count;
+                auto digit = static_cast<int16_t>(std::stoi(sdigit));
+                dscale = static_cast<int16_t>(dscale + count);
                 count = 0;
 
                 if (!existIntPart && digit == 0 && decimal.empty()) {
@@ -495,10 +496,10 @@ static std::tuple<unsigned int, std::size_t, char *> fromDecimal(
         }
     }
 
-    ndigits = decimal.size();
+    ndigits = static_cast<int16_t>(decimal.size());
     std::size_t size = 8 + ndigits * 2;
-    char *v = new char[size];
-    int16_t *vv = reinterpret_cast<int16_t *>(v);
+    auto *v = new char[size];
+    auto *vv = reinterpret_cast<int16_t *>(v);
 
     std::size_t it = 0;
     vv[it++] = htonT(ndigits);
@@ -542,7 +543,8 @@ static std::tuple<unsigned int, std::size_t, char *> fromDate(const std::optiona
         return std::make_tuple(DATEOID, 0, nullptr);
 
     char *v = new char[4];
-    *reinterpret_cast<int32_t *>(v) = htonT((*value * 1000000 - POSTGRES_EPOCH_USEC) / POSTGRES_DAY_USEC);
+    *reinterpret_cast<int32_t *>(v) = static_cast<int32_t>(
+        htonT((*value * 1000000 - POSTGRES_EPOCH_USEC) / POSTGRES_DAY_USEC));
 
     return std::make_tuple(DATEOID, 4, v);
 }
@@ -572,7 +574,7 @@ static std::tuple<unsigned int, std::size_t, char *> fromUuid(
     for (std::size_t i = 0; i < size; ++i)
         v[i] = value->data()[i];
 
-    return std::make_tuple(UUIDOID, size, nullptr);
+    return std::make_tuple(UUIDOID, size, v);
 }
 
 static std::tuple<unsigned int, std::size_t, char *> fromBytea(
@@ -586,7 +588,7 @@ static std::tuple<unsigned int, std::size_t, char *> fromBytea(
     for (std::size_t i = 0; i < size; ++i)
         v[i] = value->data()[i];
 
-    return std::make_tuple(BYTEAOID, size, nullptr);
+    return std::make_tuple(BYTEAOID, size, v);
 }
 
 std::tuple<unsigned int, std::size_t, char *> asPgValue(const SqlValue &value)

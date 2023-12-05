@@ -11,10 +11,9 @@
 #include <memory>
 #include <string>
 #include <iostream>
-#include <thread>
 #include <variant>
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char*  /*argv*/[])
 {
     auto *evBase = event_base_new();
     AsyncPg::SqlConnect connect("postgresql://postgres:1@localhost/RPLMCAPP", evBase);

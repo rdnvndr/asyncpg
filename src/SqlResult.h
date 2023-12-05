@@ -4,7 +4,7 @@
 
 #include <string>
 
-typedef struct pg_result PGresult;
+using PGresult = struct pg_result;
 
 namespace AsyncPg {
 
