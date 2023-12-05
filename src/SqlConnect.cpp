@@ -198,9 +198,9 @@ bool SqlConnect::cancel()
     return canceled;
 }
 
-void SqlConnect::post(const Callback &func)
+void SqlConnect::post(Callback func)
 {
-    auto callback = [&func](SqlConnect *self) {
+    auto callback = [func = std::move(func)](SqlConnect *self) {
         func(self);
         self->pop();
     };
