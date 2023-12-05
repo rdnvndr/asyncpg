@@ -23,37 +23,47 @@ int main(int /*argc*/, char*  /*argv*/[])
 
 
     connect.post([](AsyncPg::SqlConnect *self) {
-        if (self->error())
+        if (self->error()) {
+            self->cancel();
             return;
+        }
 
         for (const auto &record : self->result()) {
             for (const auto &field : record) {
                 if (auto value = field.value<AsyncPg::SqlType::Decimal>())
                     std::cout << *value;
+                else if (auto value = field.value<AsyncPg::SqlType::Uuid>())
+                    std::cout << AsyncPg::fromByteUuid(*value);
                 else
                     std::cout << "NULL";
                 std::cout << std::endl;
             }
         }
+        std::cout << "-----------------------------------------------------" << std::endl;
     });
 
     connect.execute(
-        R"(SELECT * FROM "dbo"."test" WHERE "a" >= $1)",
+        R"(SELECT b FROM "dbo"."test" WHERE "a" >= $1)",
         {AsyncPg::makeSqlValue<AsyncPg::SqlType::Decimal>("1.001")});
 
     connect.post([](AsyncPg::SqlConnect *self) {
-        if (self->error())
+        if (self->error()) {
+            self->cancel();
             return;
+        }
 
         for (const auto &record : self->result()) {
             for (const auto &field : record) {
                 if (auto value = field.value<AsyncPg::SqlType::Decimal>())
-                    std::cout << *value;
+                    std::cout << field.fieldName() << ":" << *value;
+                else if (auto value = field.value<AsyncPg::SqlType::Uuid>())
+                    std::cout << field.fieldName() << ": " << AsyncPg::fromByteUuid(*value);
                 else
-                    std::cout << "NULL";
+                    std::cout << field.fieldName() << ": "<< "NULL";
                 std::cout << std::endl;
             }
         }
+        std::cout << "-----------------------------------------------------" << std::endl;
     });
 
     event_base_dispatch(evBase);
