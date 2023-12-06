@@ -307,6 +307,11 @@ const SqlResult &SqlConnect::result() const
     return _result;
 }
 
+bool SqlConnect::isBusy() const
+{
+    return _isExec;
+}
+
 const SqlError &SqlConnect::error() const
 {
     return _error;

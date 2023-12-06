@@ -67,6 +67,10 @@ public:
     /// @return Результат выполнения запроса
     const SqlResult &result() const;
 
+    /// Проверяет занято ли соединение выполнением запросов
+    /// @return Результат проверки
+    bool isBusy() const;
+
     /// Производит соединение с PostgreSql
     void connecting();
 
