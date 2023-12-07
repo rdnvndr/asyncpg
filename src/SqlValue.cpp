@@ -702,84 +702,17 @@ unsigned int toPgType(SqlType type)
     return 0;
 }
 
-constexpr int parse_hex_digit(const char c)
-{
-    using namespace std::string_literals;
-    if ('0' <= c && c <= '9')
-        return c - '0';
-    else if ('a' <= c && c <= 'f')
-        return 10 + c - 'a';
-    else if ('A' <= c && c <= 'F')
-        return 10 + c - 'A';
-    else
-        throw std::domain_error{ "invalid character in GUID"s };
-}
-
-template<class T, typename C>
-constexpr T parse_hex(const C* ptr)
-{
-    constexpr size_t digits = sizeof(T) * 2;
-    T result{};
-    for (size_t i = 0; i < digits; ++i)
-        result |= parse_hex_digit(ptr[i]) << (4 * (digits - i - 1));
-    return result;
-}
-
-std::array<char, 16> toByteUuid(std::string_view str)
-{
-    std::array<char, 16> uuid{};
-
-    const auto* begin = str.data();
-    *reinterpret_cast<uint32_t *>(uuid.data()) = parse_hex<uint32_t>(begin);
-    begin += 8 + 1;
-    *reinterpret_cast<uint16_t *>(uuid.data() + 4) = parse_hex<uint16_t>(begin);
-    begin += 4 + 1;
-    *reinterpret_cast<uint16_t *>(uuid.data() + 6) = parse_hex<uint16_t>(begin);
-    begin += 4 + 1;
-    *reinterpret_cast<uint8_t *>(uuid.data() + 8) = parse_hex<uint8_t>(begin);
-    begin += 2;
-    *reinterpret_cast<uint8_t *>(uuid.data() + 9) = parse_hex<uint8_t>(begin);
-    begin += 2 + 1;
-    for (std::size_t i = 0; i < 6; ++i)
-        *reinterpret_cast<uint8_t *>(uuid.data() + i + 10) = parse_hex<uint8_t>(begin + i * 2);
-
-    return uuid;
-}
-
-void appendHex(std::string& str, uint8_t n)
-{
-    static const char* digits = "0123456789abcdef";
-    str += digits[(n >> 4) & 0xF];
-    str += digits[n & 0xF];
-}
-
-void appendHex(std::string& str, uint16_t n)
-{
-    appendHex(str, uint8_t(n >> 8));
-    appendHex(str, uint8_t(n & 0xFF));
-}
-
-void appendHex(std::string& str, uint32_t n)
-{
-    appendHex(str, uint16_t(n >> 16));
-    appendHex(str, uint16_t(n & 0xFFFF));
-}
-
 std::string fromByteUuid(const std::array<char, 16> &uuid)
 {
+    static const char* digits = "0123456789abcdef";
     std::string result;
     result.reserve(36);
-    appendHex(result, *reinterpret_cast<const uint32_t *>(uuid.data()));
-    result += '-';
-    appendHex(result, *reinterpret_cast<const uint16_t *>(uuid.data() + 4));
-    result += '-';
-    appendHex(result, *reinterpret_cast<const uint16_t *>(uuid.data() + 6));
-    result += '-';
-    appendHex(result, *reinterpret_cast<const uint8_t *>(uuid.data() + 8));
-    appendHex(result, *reinterpret_cast<const uint8_t *>(uuid.data() + 9));
-    result += '-';
-    for (std::size_t i = 0; i < 6; ++i)
-        appendHex(result, *reinterpret_cast<const uint8_t *>(uuid.data() + i + 10));
+    for (std::size_t i = 0; i < 16; ++i) {
+        if (i == 4 || i == 6 || i == 8 || i == 10)
+            result += '-';
+        result += digits[(uuid[i] >> 4) & 0xF];
+        result += digits[uuid[i] & 0xF];
+    }
     return result;
 }
 
