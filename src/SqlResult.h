@@ -27,7 +27,7 @@ public:
 
     /// Конструктор перемещения
     /// @param other Результата Sql запроса
-    SqlResult(SqlResult &&other)noexcept;
+    SqlResult(SqlResult &&other) noexcept;
 
     /// Оператор перемещения
     /// @param other Результата Sql запроса

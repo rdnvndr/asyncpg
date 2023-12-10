@@ -51,6 +51,38 @@ SqlConnect::SqlConnect(std::string_view connInfo, event_base *evbase)
     connecting();
 }
 
+SqlConnect::SqlConnect(SqlConnect &&other) noexcept
+{
+    _evbase         = other._evbase;
+    _callbackQueue  = std::move(other._callbackQueue);
+    _connect        = other._connect;
+    _connInfo       = std::move(other._connInfo);
+    _error          = std::move(other._error);
+    _result         = std::move(other._result);
+    _isExec         = other._isExec;
+    _socket         = other._socket;
+
+    other._evbase  = nullptr;
+    other._connect = nullptr;
+}
+
+SqlConnect &SqlConnect::operator=(SqlConnect &&other) noexcept
+{
+    _evbase         = other._evbase;
+    _callbackQueue  = std::move(other._callbackQueue);
+    _connect        = other._connect;
+    _connInfo       = std::move(other._connInfo);
+    _error          = std::move(other._error);
+    _result         = std::move(other._result);
+    _isExec         = other._isExec;
+    _socket         = other._socket;
+
+    other._evbase  = nullptr;
+    other._connect = nullptr;
+
+    return *this;
+}
+
 SqlConnect::~SqlConnect()
 {
     if (_connect)

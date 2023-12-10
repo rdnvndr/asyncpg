@@ -26,6 +26,21 @@ public:
     /// @param service Сервис ввода-вывода
     explicit SqlConnect(std::string_view connInfo, struct event_base *evbase = nullptr);
 
+    /// Конструктор копирования
+    SqlConnect(const SqlConnect&) = delete;
+
+    /// Оператор копирования
+    void operator=(const SqlConnect&) = delete;
+
+    /// Конструктор перемещения
+    /// @param other Соединение с базой данных
+    SqlConnect(SqlConnect &&other) noexcept;
+
+    /// Оператор перемещения
+    /// @param other Соединение с базой данных
+    /// @return Соединение с базой данных
+    SqlConnect& operator=(SqlConnect &&other) noexcept;
+
     /// Деструктор класса
     ~SqlConnect();
 
